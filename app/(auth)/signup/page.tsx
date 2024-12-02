@@ -18,7 +18,8 @@ import ForgotPassword from "./ForgotPassword";
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from "./CustomIcons";
 import AppTheme from "./theme/AppTheme";
 import ColorModeSelect from "./theme/ColorModeSelect";
-
+import { usePost } from "@/hooks/usePost";
+import { ToastContainer, toast } from "react-toastify";
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
@@ -62,6 +63,9 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 }));
 
 export default function SignIn(props: { disableCustomTheme?: boolean }) {
+  const { postData, error, response, loading } = usePost(
+    "http://localhost:3000/api/users"
+  );
   const [userError, setUserError] = React.useState(false);
   const [usernameErrorMessege, setusernameErrorMessege] = React.useState("");
   const [emailError, setEmailError] = React.useState(false);
@@ -79,17 +83,26 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    if (emailError || passwordError) {
-      event.preventDefault();
+    event.preventDefault();
+    if (emailError || passwordError || userError) {
       return;
     }
-    console.log(event.currentTarget, "EventTarget");
-    alert("");
+
     const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get("email"),
-      password: data.get("password"),
-    });
+
+    const DataPost = {
+      username: data.get("username")?.toString().trim(),
+      email: data.get("email")?.toString().trim(),
+      password: data.get("password")?.toString(),
+    };
+
+    // Check for empty fields
+    if (!DataPost.username || !DataPost.email || !DataPost.password) {
+      toast.error("All fields are required.");
+      return;
+    }
+
+    postData(DataPost);
   };
 
   const validateInputs = () => {
@@ -149,6 +162,18 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <SignInContainer direction="column" justifyContent="space-between">
         <ColorModeSelect
           sx={{ position: "fixed", top: "1rem", right: "1rem" }}
