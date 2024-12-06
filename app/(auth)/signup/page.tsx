@@ -291,12 +291,8 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             </Button>
             <Typography sx={{ textAlign: "center" }}>
               Don&apos;t have an account?{" "}
-              <Link
-                href="/material-ui/getting-started/templates/sign-in/"
-                variant="body2"
-                sx={{ alignSelf: "center" }}
-              >
-                Sign up
+              <Link href="/login" variant="body2" sx={{ alignSelf: "center" }}>
+                Sign in
               </Link>
             </Typography>
           </Box>

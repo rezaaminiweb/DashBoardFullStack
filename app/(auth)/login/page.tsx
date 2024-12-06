@@ -18,6 +18,11 @@ import ForgotPassword from "./ForgotPassword";
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from "./CustomIcons";
 import AppTheme from "./theme/AppTheme";
 import ColorModeSelect from "./theme/ColorModeSelect";
+import axios from "axios";
+import { usePost } from "@/hooks/usePost";
+import { signIn } from "next-auth/react";
+import { redirect } from "next/dist/server/api-utils";
+import { useRouter } from "next/navigation";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
@@ -62,7 +67,7 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 }));
 
 export default function SignIn(props: { disableCustomTheme?: boolean }) {
-  
+  const router = useRouter();
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
   const [passwordError, setPasswordError] = React.useState(false);
@@ -72,21 +77,37 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
   const handleClickOpen = () => {
     setOpen(true);
   };
-
+  const SignInGoogle = async () => {
+    await signIn("google");
+  };
   const handleClose = () => {
     setOpen(false);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     if (emailError || passwordError) {
       return;
     }
     const data = new FormData(event.currentTarget);
-    console.log({
+    const DataSend = {
       email: data.get("email"),
       password: data.get("password"),
-    });
+      redirect: false,
+    };
+    console.log(DataSend, "SendData");
+    const signInData = await signIn("credentials", DataSend);
+    console.log(signInData, "asweqweqweqweqweqwewqe");
+    if (signInData?.error) {
+      console.log(signInData.error, "errorShow");
+    } else {
+      router.push("/");
+    }
+    // const DataSignin = {
+    //   email: data.get("email"),
+    //   password: data.get("password"),
+    // };
   };
 
   const validateInputs = () => {
@@ -204,7 +225,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert("Sign in with Google")}
+              onClick={() => SignInGoogle()}
               startIcon={<GoogleIcon />}
             >
               Sign in with Google
@@ -219,11 +240,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             </Button>
             <Typography sx={{ textAlign: "center" }}>
               Don&apos;t have an account?{" "}
-              <Link
-                href="/material-ui/getting-started/templates/sign-in/"
-                variant="body2"
-                sx={{ alignSelf: "center" }}
-              >
+              <Link href="/signup" variant="body2" sx={{ alignSelf: "center" }}>
                 Sign up
               </Link>
             </Typography>

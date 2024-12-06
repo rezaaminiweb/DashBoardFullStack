@@ -1,87 +1,46 @@
-import connect from "@/lib/db";
-import User from "@/lib/modals/user";
+import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { Types } from "mongoose";
-const ObjectId = require("mongoose").Types.ObjectId;
-export const GET = async () => {
-  try {
-    await connect();
-    const users = await User.find();
+import { hash } from "bcrypt";
 
-    return new NextResponse(JSON.stringify(users), { status: 200 });
-  } catch (error) {
-    if (error instanceof Error) {
-      return new NextResponse("Error in fetching" + error.message, {
-        status: 500,
-      });
-    } else {
-      return new NextResponse("an Error", { status: 500 });
-    }
-  }
-};
-export const POST = async (request: Request) => {
+export const POST = async (req: Request) => {
   try {
-    const body = await request.json();
-    await connect();
-    const newUser = new User(body);
-    await newUser.save();
-    return new NextResponse(JSON.stringify({ message: "User is Created" }), {
-      status: 200,
+    const body = await req.json();
+    const { email, username, password } = body;
+    const existingUserByEmail = await db.user.findUnique({
+      where: { email: email },
     });
-  } catch (error) {
-    
-    if (error instanceof Error) {
-      return new NextResponse("Error in fetching " + error.message, {
-        status: 500,
-      });
-    } else {
-      return new NextResponse("an Error", { status: 500 });
+    if (existingUserByEmail) {
+      return NextResponse.json(
+        { error: "Email already exists" },
+        {
+          status: 400,
+        }
+      );
     }
-  }
-};
-export const PATCH = async (request: Request) => {
-  try {
-    const body = await request.json();
-    const { userId, newUsername } = body;
-    await connect();
-    if (!userId || !newUsername) {
-      return new NextResponse(
-        JSON.stringify({ message: "ID or new username not found" }),
+    const existingUserByUsername = await db.user.findUnique({
+      where: { username: username },
+    });
+    if (existingUserByUsername) {
+      return NextResponse.json(
+        { error: "Username already exists" },
         { status: 400 }
       );
     }
-    console.log(Types.ObjectId.isValid(userId), "TypesError");
-    if (!Types.ObjectId.isValid(userId)) {
-      return new NextResponse(JSON.stringify({ message: "invalid User " }), {
-        status: 400,
-      });
-    }
-    const updatedUser = await User.findByIdAndUpdate(
-      {
-        _id: new ObjectId(userId),
+    const hashedPassword = await hash(password, 10);
+    const newUser = await db.user.create({
+      data: {
+        email: email,
+        username: username,
+        password: hashedPassword,
       },
+    });
+    const { password: newUserPassword, ...rest } = newUser;
+    return NextResponse.json(
       {
-        username: newUsername,
+        user: rest,
+        message: "User created successfully",
       },
-      {
-        new: true,
-      }
+      { status: 201 }
     );
-    if (!updatedUser) {
-      return new NextResponse(
-        JSON.stringify({ message: "user not found in database" }),
-        { status: 400 }
-      );
-    }
-    return new NextResponse(
-      JSON.stringify({ message: "user is updated", user: updatedUser }),
-      { status: 200 }
-    );
-  } catch (error) {
-    if (error instanceof Error) {
-      return new NextResponse("Error in updating user " + error.message, {
-        status: 500,
-      });
-    }
-  }
+  } catch (error) {}
 };
